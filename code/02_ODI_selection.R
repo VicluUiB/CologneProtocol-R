@@ -27,23 +27,23 @@ for (i in 1:length(isoline_polygons)) {
 }
 
 if(merge_polygons == TRUE){
-# EXPERIMENTAL:
-# Counting the numbers of distinct areas with specif site density MERGED
-
-number <- data.frame(matrix(
-  # nrow is to long, but this doesn't effect the results
-  nrow = max(Isolines_stats$number_Area),
-  ncol = length(isoline_merged)))
-
-for (i in 1:length(isoline_merged)) {
+  # EXPERIMENTAL:
+  # Counting the numbers of distinct areas with specif site density MERGED
   
-  for (j in 1:length(isoline_merged@polygons[[i]]@Polygons)) {
-    # TRUE if area of polygon is larger than cell size
-    number[j, i] <- isoline_merged@polygons[[i]]@Polygons[[j]]@area != your_grid_spacing * your_grid_spacing
-  }
-}  
-
-Isolines_stats$number_Area_merged <- as.vector(apply(number, 2, function(x) sum(x, na.rm = TRUE)))
+  number <- data.frame(matrix(
+    # nrow is to long, but this doesn't effect the results
+    nrow = max(Isolines_stats$number_Area),
+    ncol = length(isoline_merged)))
+  
+  for (i in 1:length(isoline_merged)) {
+    
+    for (j in 1:length(isoline_merged@polygons[[i]]@Polygons)) {
+      # TRUE if area of polygon is larger than cell size
+      number[j, i] <- isoline_merged@polygons[[i]]@Polygons[[j]]@area != your_grid_spacing * your_grid_spacing
+    }
+  }  
+  
+  Isolines_stats$number_Area_merged <- as.vector(apply(number, 2, function(x) sum(x, na.rm = TRUE)))
 }
 
 # Insert name of isolines
@@ -83,20 +83,3 @@ Isolines_stats$diff_Area <- c(NA, diff(Isolines_stats[, 9]))
 
 isoline_polygons@data <- Isolines_stats
 
-
-# Smooth isolines/polygons (for visualization only) ------------------------------
-
-# The smoothed isolines are just for visualization, not for counting sites or calculating areas!!!
-
-if(merge_polygons == TRUE){
-
-# Add Isolines_stats to isoline_merged ---------------------------------------
-isoline_merged@data <- Isolines_stats
-  
-# convert polygons to lines  
-isoline_merged_lines <- as(isoline_merged, 'SpatialLinesDataFrame')
-  
-# smooth isolines (smoothness can be adjusted)
-iso_merged_lines_smooth <- smoothr::smooth(isoline_merged_lines, method = "ksmooth", smoothness = 2)
-
-}
