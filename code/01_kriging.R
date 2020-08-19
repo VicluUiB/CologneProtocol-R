@@ -52,9 +52,9 @@ LEC_kriged <- gstat::krige(radiusLEC~1,
                            vertices_spdf,
                            grid,
                            model = vertices_vario_fit,
-                           nmin = your_nmin,
-                           nmax = your_nmax,
-                           maxdist = bbox_diag/2,
+                           # nmin = your_nmin,
+                           # nmax = your_nmax,
+                           # maxdist = bbox_diag/2,
                            debug.level = -1)
 
 # Create isolines --------------------------------------------------------------
@@ -76,61 +76,62 @@ isoline_polygons@data[, 1] <- your_isoline_steps[2:c(length(isoline_polygons@dat
 # Merge polygons ---------------------------------------------------------------
 # If Condition wether isoline polygons should be merged or not
 if(merge_polygons == TRUE){
-
-# THIS IS EXPERIMENTAL
-
-# Please note: the running time of the following code may be very long
-# Create new SpatialPolygonsDataFrame with merged Polygons in order to reduce
-# errors when calculating the number of areas with a specific site density.
-
-# Until now the values of the following code need to be adjusted by hand
-
-# copy of isoline_polygons
-isoline_polygons_copy <- isoline_polygons
-
-# Get Isoline steps/equidistance variables
-equidist <- diff(your_isoline_steps)[1]
-penultimate_iso <- max(your_isoline_steps) - equidist
-
-
-# New SPDF with only areas of the lowest site density
-print(paste0("Creating Contour-Line ", 1,"/",length(seq(equidist, penultimate_iso, equidist))+1,": ",equidist))
-isoline_merged <- isoline_polygons_copy[isoline_polygons_copy@data[, 1] == equidist, ]
-
-# Variable needed for printing progress
-n = 2
-
-iso_list = list()
-
-
-# The following loop merges the polygons.
-for (i in seq(equidist, penultimate_iso, equidist)) {
   
-  # Print progress
-  print(paste0("Creating Contour-Line ", n,"/",length(seq(equidist, penultimate_iso, equidist))+1,": ",i + equidist))
-  flush.console()
-  n = n + 1
+  # THIS IS EXPERIMENTAL
   
-  # change the value of site density of a polygon to one higher equidistance
-  isoline_polygons_copy[isoline_polygons_copy@data[, 1] == i, ] <- i + equidist
+  # Please note: the running time of the following code may be very long
+  # Create new SpatialPolygonsDataFrame with merged Polygons in order to reduce
+  # errors when calculating the number of areas with a specific site density.
   
-  # aggregate these polygons
-  iso_list <- append(iso_list,  raster::aggregate(isoline_polygons_copy[isoline_polygons_copy@data[, 1] == i + equidist, ], by = "z"))
+  # Until now the values of the following code need to be adjusted by hand
   
-  sequence <- seq(equidist, penultimate_iso, equidist)
+  # copy of isoline_polygons
+  isoline_polygons_copy <- isoline_polygons
   
-  m <- sequence[seq(0, length(sequence)-1, 10)]
+  # Get Isoline steps/equidistance variables
+  equidist <- diff(your_isoline_steps)[1]
+  penultimate_iso <- max(your_isoline_steps) - equidist
   
   
-  # Stops for merging every 10th isoline to speed up process
-  if(i %in% m){
-    print("...merging")
-    isoline_polygons_copy <- raster::aggregate(isoline_polygons_copy, by = "z")
+  # New SPDF with only areas of the lowest site density
+  print(paste0("Creating Contour-Line ", 1,"/",length(seq(equidist, penultimate_iso, equidist))+1,": ",equidist))
+  isoline_merged <- isoline_polygons_copy[isoline_polygons_copy@data[, 1] == equidist, ]
+  
+  # Variable needed for printing progress
+  n = 2
+  
+  iso_list = list()
+  
+  
+  # The following loop merges the polygons.
+  for (i in seq(equidist, penultimate_iso, equidist)) {
+    
+    # Print progress
+    print(paste0("Creating Contour-Line ", n,"/",length(seq(equidist, penultimate_iso, equidist))+1,": ",i + equidist))
+    flush.console()
+    n = n + 1
+    
+    # change the value of site density of a polygon to one higher equidistance
+    isoline_polygons_copy[isoline_polygons_copy@data[, 1] == i, ] <- i + equidist
+    
+    # aggregate these polygons
+    iso_list <- append(iso_list,  raster::aggregate(isoline_polygons_copy[isoline_polygons_copy@data[, 1] == i + equidist, ], by = "z"))
+    
+    sequence <- seq(equidist, penultimate_iso, equidist)
+    
+    m <- sequence[seq(0, length(sequence)-1, 10)]
+    
+    
+    # Stops for merging every 10th isoline to speed up process
+    if(i %in% m){
+      print("...merging")
+      isoline_polygons_copy <- raster::aggregate(isoline_polygons_copy, by = "z")
+    }
   }
+  
+  isoline_merged <- rbind(isoline_merged, do.call(rbind, iso_list))
+  
+  # delete copy of isoline_polygons
+  rm(isoline_polygons_copy)
 }
 
-isoline_merged <- rbind(isoline_merged, do.call(rbind, iso_list))
-
-# delete copy of isoline_polygons
-rm(isoline_polygons_copy)
-}
