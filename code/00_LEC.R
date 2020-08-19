@@ -14,9 +14,9 @@ options(scipen = 999)
 # Definition of used variables throughout the script ---------------------------
 
 # variables used for loading and creating data 
-your_projection <- "+init=epsg:31467" # the projection of your data
+your_projection <- "+init=epsg:25832" # the projection of your data
 your_grid_spacing <- 1000 # choose some value [m] between 200 and 1000 
-your_isoline_steps <- seq(0, 20000, 500) # min, max, step (equidistance)
+your_isoline_steps <- seq(0, 25000, 500) # min, max, step (equidistance)
 remove_border_points <- FALSE # Boolean (TRUE/FALSE), wether border points are removed or not
 export_raster <- TRUE # Boolean (TRUE/FALSE), wether kriging and variance raster are exported
 merge_polygons <- FALSE # Boolean (TRUE/FALSE), wether polygons should be merged (experimental) to get no of parts
@@ -28,31 +28,14 @@ your_nmax <- 10 # maximum number of sites used for interpolation (your_nmax = 10
 
 # variables used for plotting statistics of isolines
 # choose according to your_isoline_steps
-your_limit <- c(1, 20) # limits the x-axis
-your_breaks <- seq(1, 20, 1) # sets the tick marks on x-axis
+your_limit <- c(1, 25) # limits the x-axis
+your_breaks <- seq(1, 25, 1) # sets the tick marks on x-axis
 
 
 # Load data --------------------------------------------------------------------
-
-# Sample data of Early Neolithic sites from Preuss 1998
-# Data is available from the CRC 806 database
-# The accuracy of the localization of the sites is 2.5 km (Zimmermann et al. 2004, 55)
-url_link <- "http://sfb806srv.uni-koeln.de/owsproxy.php?service=WFS&version=1.0.0&request=GetFeature&typeNames=geonode%3A_13_earlyneolithic_ce_sites_wgs84&outputFormat=csv"
-
-# load date as a data.frame
-sites <- read.csv(url(url_link))
-
-# Conversion into SPDF
-sites <- sp::SpatialPointsDataFrame(sp::SpatialPoints(
-  cbind(sites$RECHTS, sites$HOCH)),
-  sites,
-  proj4string = CRS(your_projection))
-
+# sites <- rgdal::readOGR(dsn = "data", layer = "site_locations")
 sp::proj4string(sites) <- sp::CRS(your_projection)
 
-# Alternatively you can load your local data (copy it to folder data)
-# sites <- rgdal::readOGR(dsn = "data", layer = "earlyneolithic_ce_sites")
-# sp::proj4string(sites) <- sp::CRS(your_projection)
 
 # Largest Empty Circles (LEC) --------------------------------------------------
 
@@ -82,9 +65,9 @@ sp::proj4string(vertices_spdf) <- sp::CRS(your_projection)
 
 # If Condition wether border points are removed or not
 if(remove_border_points == TRUE){
-# remove dublicates and border points
-vertices_spdf <- sp::remove.duplicates(vertices_spdf) %>%
-  {.[.[[2]] == FALSE, ]}
+  # remove dublicates and border points
+  vertices_spdf <- sp::remove.duplicates(vertices_spdf) %>%
+    {.[.[[2]] == FALSE, ]}
 } else {
   # just remove dublicates
   vertices_spdf <- sp::remove.duplicates(vertices_spdf)  
@@ -113,7 +96,7 @@ df.bind <- function(x) {
 
 # creating a list of all tiles 
 voronoi_list <- deldir::deldir(sites@coords[, 1],
-                             sites@coords[, 2]) %>%
+                               sites@coords[, 2]) %>%
   deldir::tile.list() %>%
   lapply('[', c("x", "y")) %>%
   lapply(as.data.frame) %>%
@@ -129,7 +112,7 @@ names_ID <- as.character(c(1:length(voronoi_list)))
 # This code was provided by user Ben from stackexchange:
 # https://gis.stackexchange.com/questions/171124/data-frame-to-spatialpolygonsdataframe-with-multiple-polygons
 voronoi_tiles <- lapply(seq_along(voronoi_list), function(i) sp::Polygons(list(voronoi_list[[i]]),
-                                                                 ID = names_ID[i]))
+                                                                          ID = names_ID[i]))
 
 # Convert Polygons class into SpatialPolygons
 voronoi_tiles <- sp::SpatialPolygons(voronoi_tiles, proj4string = sp::CRS(your_projection))
